@@ -1,0 +1,1405 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>飞牛音乐桌面播放器 · 开发者说明书</title>
+<style>
+:root{--fg:#1f2328;--muted:#59636e;--line:#d8dee4;--bg:#fff;--code:#f6f8fa;--accent:#6d4aff}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.75 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif}
+.wrap{display:flex;max-width:1240px;margin:0 auto;gap:40px;padding:40px 28px}
+nav.toc{position:sticky;top:24px;align-self:flex-start;width:260px;max-height:calc(100vh - 48px);overflow:auto;font-size:14px;border-right:1px solid var(--line);padding-right:16px}
+nav.toc ul{list-style:none;padding-left:14px;margin:6px 0}
+nav.toc>ul{padding-left:0}
+nav.toc a{color:var(--muted);text-decoration:none}
+nav.toc a:hover{color:var(--accent)}
+main{flex:1;min-width:0;max-width:880px}
+h1{font-size:30px;margin:0 0 8px}
+h2{font-size:23px;margin:40px 0 12px;padding-top:12px;border-top:1px solid var(--line)}
+h3{font-size:18px;margin:26px 0 8px}
+h4{font-size:16px;margin:20px 0 6px}
+p,li{color:var(--fg)}
+blockquote{margin:16px 0;padding:10px 16px;border-left:4px solid var(--accent);background:#faf8ff;color:var(--muted)}
+code{background:var(--code);padding:.15em .35em;border-radius:4px;font-size:88%;font-family:ui-monospace,SFMono-Regular,Consolas,"Liberation Mono",monospace}
+pre{background:var(--code);padding:14px 16px;border-radius:8px;overflow:auto;line-height:1.55}
+pre code{background:none;padding:0;font-size:13px}
+table{border-collapse:collapse;width:100%;margin:14px 0;font-size:14px}
+th,td{border:1px solid var(--line);padding:7px 10px;text-align:left;vertical-align:top}
+th{background:var(--code)}
+a{color:var(--accent)}
+hr{border:0;border-top:1px solid var(--line);margin:28px 0}
+@media (max-width:900px){nav.toc{display:none}.wrap{padding:20px 16px}}
+@media print{nav.toc{display:none}.wrap{display:block;max-width:none;padding:0}h2{page-break-after:avoid}pre,table{page-break-inside:avoid}}
+</style>
+</head>
+<body><div class="wrap">
+<nav class="toc"><strong>目录</strong><div class="toc">
+<ul>
+<li><a href="#_1">飞牛音乐桌面播放器 · 开发者说明书</a><ul>
+<li><a href="#_2">目录</a></li>
+<li><a href="#0">0. 项目定位与免责声明</a></li>
+<li><a href="#1">1. 三分钟跑起来</a><ul>
+<li><a href="#11">1.1 环境</a></li>
+<li><a href="#12">1.2 从源码运行</a></li>
+<li><a href="#13-token">1.3 手动 token（调试/浏览器模式）</a></li>
+<li><a href="#14">1.4 打包</a></li>
+</ul>
+</li>
+<li><a href="#2">2. 架构总览</a><ul>
+<li><a href="#21">2.1 总体结构</a></li>
+<li><a href="#22">2.2 一次点击到出声</a></li>
+<li><a href="#23">2.3 为什么必须有本地服务</a></li>
+</ul>
+</li>
+<li><a href="#3">3. 目录与文件逐一说明</a><ul>
+<li><a href="#31">3.1 根目录</a></li>
+<li><a href="#32-app">3.2 app/ 前端</a><ul>
+<li><a href="#appindexhtml138">app/index.html（138 行）</a></li>
+<li><a href="#appcssstylecss367">app/css/style.css（367 行）</a></li>
+<li><a href="#appjsapijs93">app/js/api.js（93 行）</a></li>
+<li><a href="#appjsplayerjs151">app/js/player.js（151 行）</a></li>
+<li><a href="#appjsviewsjs362">app/js/views.js（362 行）</a></li>
+<li><a href="#appjsappjs569">app/js/app.js（569 行）</a></li>
+</ul>
+</li>
+<li><a href="#33-server">3.3 server/ 本地服务</a><ul>
+<li><a href="#serverindexmjs272">server/index.mjs（272 行）</a></li>
+<li><a href="#servernasmjs89">server/nas.mjs（89 行）</a></li>
+<li><a href="#serverconfigmjs59">server/config.mjs（59 行）</a></li>
+</ul>
+</li>
+<li><a href="#34-electron">3.4 electron/ 桌面壳</a><ul>
+<li><a href="#electronmainmjs238">electron/main.mjs（238 行）</a></li>
+</ul>
+</li>
+<li><a href="#35-build-scripts">3.5 build/ 与 scripts/</a></li>
+<li><a href="#36">3.6 运行时文件（不在仓库里）</a></li>
+</ul>
+</li>
+<li><a href="#4">4. 开发过程复盘</a><ul>
+<li><a href="#41">4.1 时间线</a></li>
+<li><a href="#42">4.2 五个关键突破</a></li>
+<li><a href="#43">4.3 踩坑清单（省得再踩）</a></li>
+</ul>
+</li>
+<li><a href="#5">5. 接口逆向笔记</a><ul>
+<li><a href="#51">5.1 定位</a></li>
+<li><a href="#52-authx">5.2 签名 authx</a></li>
+<li><a href="#53-oauth">5.3 OAuth 登录</a></li>
+<li><a href="#54">5.4 常用端点</a></li>
+<li><a href="#55">5.5 分页、排序、错误码</a></li>
+</ul>
+</li>
+<li><a href="#6">6. 关键实现细节</a><ul>
+<li><a href="#61">6.1 代理层为什么这么写</a></li>
+<li><a href="#62-range">6.2 Range 透传</a></li>
+<li><a href="#63-code">6.3 登录窗与 code 拦截</a></li>
+<li><a href="#64">6.4 播放器状态</a></li>
+<li><a href="#65">6.5 歌词</a></li>
+<li><a href="#66">6.6 安全策略</a></li>
+</ul>
+</li>
+<li><a href="#7">7. 调试与测试</a><ul>
+<li><a href="#71">7.1 无头运行</a></li>
+<li><a href="#72">7.2 调试环境变量</a></li>
+<li><a href="#73">7.3 实测样例</a></li>
+</ul>
+</li>
+<li><a href="#8">8. 打包与发布</a><ul>
+<li><a href="#81-zip">8.1 免安装 zip</a></li>
+<li><a href="#82-nsis-linux">8.2 NSIS 安装包（Linux 交叉编译）</a></li>
+<li><a href="#83">8.3 图标与版本信息</a></li>
+<li><a href="#84">8.4 文件名编码坑（重要）</a></li>
+</ul>
+</li>
+<li><a href="#9">9. 已知限制与路线图</a></li>
+<li><a href="#10">10. 如何继续开发</a><ul>
+<li><a href="#101">10.1 加一个新页面</a></li>
+<li><a href="#102">10.2 加一个新接口</a></li>
+<li><a href="#103">10.3 加播放器能力</a></li>
+<li><a href="#104">10.4 改签名/兼容新版</a></li>
+</ul>
+</li>
+<li><a href="#11_1">11. 贡献指南</a></li>
+<li><a href="#12_1">12. 合规、安全与公开前检查清单</a></li>
+<li><a href="#a">附录 A：错误码</a></li>
+<li><a href="#bfaq">附录 B：FAQ</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</nav>
+<main><h1 id="_1">飞牛音乐桌面播放器 · 开发者说明书</h1>
+<blockquote>
+<p>版本：v0.1.0 ｜ 完成日期：2026-11-12 ｜ 适配：fnOS <code>trim.music</code> 1.1.19（mediasrv 0.8.45）</p>
+<p>本文面向想继续维护、二次开发或复刻这套方案的工程师。读完应该能：把项目跑起来、看懂每个文件、理解为什么要这么设计、知道哪些坑已经踩过、以及怎么加功能。</p>
+</blockquote>
+<hr />
+<h2 id="0">0. 项目定位与免责声明</h2>
+<p><strong>它是什么</strong>：一个第三方桌面客户端，直接对接飞牛 NAS 自带「飞牛音乐」的 Web 接口，让你在电脑上听 NAS 里的歌，不用开浏览器。</p>
+<p><strong>它不是什么</strong>：不是飞牛官方产品，不代表飞牛；不破解付费内容；不绕过账号体系——登录仍然走飞牛自己的 OAuth 页面，权限仍然是账号本身的权限。</p>
+<p><strong>风险提示</strong></p>
+<ul>
+<li>接口是逆向官方 Web 前端得到的，<strong>官方改版就可能失效</strong>，本项目不承诺长期兼容。</li>
+<li>签名用的 <code>secret</code> / <code>apiKey</code> 是官方前端 bundle 里的客户端常量，不是服务端密钥；公开源码时请保留出处说明，若权利人提出异议应移除。</li>
+<li>请只用于访问<strong>你自己拥有或获授权</strong>的 NAS；不要做批量扫描、爬取、商业分发。</li>
+<li>代码按「现状」提供，不提供任何担保。</li>
+</ul>
+<hr />
+<h2 id="1">1. 三分钟跑起来</h2>
+<h3 id="11">1.1 环境</h3>
+<table>
+<thead>
+<tr>
+<th>依赖</th>
+<th>版本</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Node.js</td>
+<td>≥ 18（推荐 20/22/24）</td>
+<td>本地服务用到全局 <code>fetch</code>、<code>Readable.fromWeb</code></td>
+</tr>
+<tr>
+<td>Electron</td>
+<td>33.x</td>
+<td>仅桌面壳需要；纯 Web 调试可不装</td>
+</tr>
+<tr>
+<td>操作系统</td>
+<td>Windows / macOS / Linux</td>
+<td>开发期在 Linux（无桌面）用 xvfb 跑</td>
+</tr>
+<tr>
+<td>网络</td>
+<td>能访问 NAS 的 5000 端口</td>
+<td>fnOS 默认 HTTP 5000 / HTTPS 5001</td>
+</tr>
+</tbody>
+</table>
+<h3 id="12">1.2 从源码运行</h3>
+<pre><code class="language-bash">git clone &lt;repo&gt; &amp;&amp; cd fnmusic-player
+npm i -D electron            # 国内可加 ELECTRON_MIRROR=https://npmmirror.com/mirrors/electron/
+
+npx electron .               # 桌面版
+# 或者只跑本地 Web 版，浏览器打开 http://127.0.0.1:7311
+npm start
+</code></pre>
+<p>首次启动没有配置，会弹出「连接飞牛 NAS」：</p>
+<ol>
+<li>填地址，例如 <code>http://192.168.1.10:5000</code>（只填 IP 也可以，HTTP 会自动补 5000）</li>
+<li>点「连接并登录」→ 弹出飞牛登录页</li>
+<li>登录（若账号开了两步验证，需要输入 OTP）</li>
+<li>成功后自动关闭登录窗、刷新主界面</li>
+</ol>
+<blockquote>
+<p>调试时也可以手动粘贴 <code>music-token</code>，见 1.3。</p>
+</blockquote>
+<h3 id="13-token">1.3 手动 token（调试/浏览器模式）</h3>
+<p><code>music-token</code> 存在 NAS 的 SQLite 里（<code>trim.music/db/music.db</code> 的 <code>user_token</code> 表），有 SSH 权限时可以自己取一条有效的：</p>
+<pre><code class="language-bash">sudo sqlite3 /usr/local/apps/@appdata/trim.music/db/music.db \
+  &quot;select token from user_token order by expired_at desc limit 1;&quot;
+</code></pre>
+<p>把它粘进登录弹窗的「手动 token」即可。<strong>这是调试手段，不要写进代码或提交到仓库。</strong></p>
+<h3 id="14">1.4 打包</h3>
+<pre><code class="language-bash"># 免安装 zip（Windows）
+# 下载 electron-v33.x-win32-x64.zip，解压后把本仓库放进 resources/app，exe 改名 FnMusic.exe
+
+# NSIS 安装包（Linux 交叉编译，不需要 wine）
+sudo apt install nsis
+cd build &amp;&amp; makensis installer.nsi
+</code></pre>
+<p>详见第 8 章。</p>
+<hr />
+<h2 id="2">2. 架构总览</h2>
+<h3 id="21">2.1 总体结构</h3>
+<pre><code>┌─────────────────────────────────────────────────────────────┐
+│ Electron 主进程 (electron/main.mjs)                          │
+│  · 创建窗口，加载 http://127.0.0.1:&lt;随机端口&gt;                 │
+│  · 启动本地 HTTP 服务 (server/index.mjs)                     │
+│  · 拦截 OAuth 登录窗的 redirect，抢 code                      │
+└───────────────┬─────────────────────────────────────────────┘
+                │ 加载
+┌───────────────▼─────────────────────────────────────────────┐
+│ 渲染进程（app/，纯原生 ESM，无构建）                          │
+│  index.html + css/style.css                                  │
+│  js/api.js     统一请求封装 / 401 → AuthError                 │
+│  js/player.js  队列、随机、循环、MediaSession、&lt;audio&gt;        │
+│  js/views.js   各页面 HTML 生成（模板字符串）                 │
+│  js/app.js     路由、事件绑定、歌词、收藏、登录弹窗            │
+└───────────────┬─────────────────────────────────────────────┘
+                │ fetch /api/*、/media/*
+┌───────────────▼─────────────────────────────────────────────┐
+│ 本地 Node 服务 (server/)                                     │
+│  index.mjs  静态资源 + 登录接口 + 上游代理 + 音频/封面透传     │
+│  nas.mjs    authx 签名、URL 规范化、NAS API 调用              │
+│  config.mjs ~/.fnmusic-player/config.json 读写（0600）        │
+└───────────────┬─────────────────────────────────────────────┘
+                │ HTTP + authx + Cookie: music-token
+┌───────────────▼─────────────────────────────────────────────┐
+│ 飞牛 NAS：nginx → unix:/var/run/trim_music.socket            │
+│ API base: /music/api/v1                                      │
+└─────────────────────────────────────────────────────────────┘
+</code></pre>
+<h3 id="22">2.2 一次点击到出声</h3>
+<pre><code>点击歌曲行
+  → app.js 绑定的事件 → player.playTrack(track, queue)
+  → &lt;audio src=&quot;/media/stream?guid=...&quot;&gt;
+  → 本地服务 handleStream()
+  → 带 authx + Cookie 请求 NAS /track/stream?guid=...
+  → 透传 Range / 206 / Content-Range 回浏览器
+  → 音频开始播放
+</code></pre>
+<p>歌词、收藏、封面同理，全部经本地服务转发，渲染进程永远不直接访问 NAS。</p>
+<h3 id="23">2.3 为什么必须有本地服务</h3>
+<p>浏览器里直接请求 NAS 会撞三堵墙：</p>
+<ol>
+<li><strong>CORS</strong>：NAS 不返回 <code>Access-Control-Allow-Origin</code>，跨源读不到响应。</li>
+<li><strong>Cookie</strong>：<code>music-token</code> 是 NAS 域的 Cookie，<code>127.0.0.1</code> 页面带不上。</li>
+<li><strong>签名</strong>：每个请求都要 <code>authx</code>，且 secret 不能放在公开的前端代码里（虽然本项目最终仍在本地持有）。</li>
+</ol>
+<p>本地服务同时解决三者：它是同源（<code>127.0.0.1</code>）的，能安全持有 token、能算签名、能加 Cookie，还能把 Range 原样透传。附带好处：token 不出本机、渲染进程拿不到 token。</p>
+<hr />
+<h2 id="3">3. 目录与文件逐一说明</h2>
+<h3 id="31">3.1 根目录</h3>
+<table>
+<thead>
+<tr>
+<th>路径</th>
+<th>作用</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>package.json</code></td>
+<td>项目清单</td>
+<td><code>type: module</code>；<code>main</code> 指向 <code>electron/main.mjs</code>；<code>npm start</code> 跑纯 Web 服务；<code>devDependencies</code> 只有 electron 和 resedit（打包用）</td>
+</tr>
+<tr>
+<td><code>README.md</code></td>
+<td>使用者视角说明</td>
+<td>功能、运行、下载、打包</td>
+</tr>
+<tr>
+<td><code>.gitignore</code></td>
+<td>忽略 <code>node_modules/</code>、<code>dist/</code>、<code>*.log</code></td>
+<td>建议再加 <code>backups/</code>、<code>*.local.*</code></td>
+</tr>
+<tr>
+<td><code>app/</code></td>
+<td>前端</td>
+<td>见 3.2</td>
+</tr>
+<tr>
+<td><code>server/</code></td>
+<td>本地服务</td>
+<td>见 3.3</td>
+</tr>
+<tr>
+<td><code>electron/</code></td>
+<td>桌面壳</td>
+<td>见 3.4</td>
+</tr>
+<tr>
+<td><code>build/</code></td>
+<td>打包资源</td>
+<td>图标、NSIS 脚本</td>
+</tr>
+<tr>
+<td><code>scripts/</code></td>
+<td>开发/打包脚本</td>
+<td>登录页探针、PE 资源修改</td>
+</tr>
+<tr>
+<td><code>docs/</code></td>
+<td>文档</td>
+<td>接口笔记、路线图、本说明书</td>
+</tr>
+<tr>
+<td><code>dist/</code></td>
+<td>构建产物（不入库）</td>
+<td>exe / zip</td>
+</tr>
+<tr>
+<td><code>backups/</code></td>
+<td>源码快照（不入库）</td>
+<td>tar.gz</td>
+</tr>
+</tbody>
+</table>
+<h3 id="32-app">3.2 <code>app/</code> 前端</h3>
+<h4 id="appindexhtml138"><code>app/index.html</code>（138 行）</h4>
+<p>单页骨架，没有框架、没有构建。结构：</p>
+<ul>
+<li><code>&lt;head&gt;</code>：CSP（<code>default-src 'self'</code>，样式允许 inline）、引入 <code>css/style.css</code></li>
+<li>左侧 <code>.sidebar</code>：Logo、导航（首页/歌曲/专辑/歌手/歌单/收藏/文件夹）、底部用户区</li>
+<li>顶部 <code>.topbar</code>：路由标题 + 搜索框</li>
+<li>中间 <code>#view</code>：所有页面渲染到这里</li>
+<li>底部 <code>.playerbar</code>：封面、标题/歌手、上一首/播放/下一首、进度条、时间、音量、歌词/队列按钮</li>
+<li>两个抽屉：<code>#queueDrawer</code>、<code>#lyricsDrawer</code></li>
+<li>登录弹窗 <code>#serverModal</code>：地址输入、连接按钮、手动 token、状态文字</li>
+<li><code>&lt;audio id="audio"&gt;</code> 全局唯一</li>
+</ul>
+<blockquote>
+<p>改 UI 优先动这里 + <code>style.css</code>，逻辑在 <code>app.js</code>。</p>
+</blockquote>
+<h4 id="appcssstylecss367"><code>app/css/style.css</code>（367 行）</h4>
+<p>暗色玻璃拟态主题，CSS 变量集中在 <code>:root</code>（<code>--bg</code>、<code>--panel</code>、<code>--text</code>、<code>--accent</code> 等）。</p>
+<p>分区：reset → 布局（grid：sidebar / main / playerbar）→ 侧栏 → 顶栏 → 卡片网格 → 歌曲行 → 播放条 → 抽屉 → 弹窗 → 骨架屏 → 响应式。</p>
+<p>几个容易踩的点：</p>
+<ul>
+<li><code>.track-row</code> 用 <code>grid-template-columns</code>，列宽改这里；标题列必须保留 <code>minmax(0, …)</code> 否则长标题会把布局撑破。</li>
+<li><code>.cover</code> 是固定比例容器，图片 <code>object-fit: cover</code>。</li>
+<li>播放条三栏 <code>220px 1fr 260px</code>，窄屏会挤，最小窗口设了 980×620。</li>
+<li>所有文本溢出都用 <code>nowrap + ellipsis</code>。</li>
+</ul>
+<h4 id="appjsapijs93"><code>app/js/api.js</code>（93 行）</h4>
+<table>
+<thead>
+<tr>
+<th>导出</th>
+<th>作用</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>AuthError</code></td>
+<td>401 专用错误，上层据此弹重新登录</td>
+</tr>
+<tr>
+<td><code>state</code></td>
+<td>全局状态：host / loggedIn / user / volume / lastView / serverName</td>
+</tr>
+<tr>
+<td><code>loadState()</code></td>
+<td><code>GET /api/state</code> 填充 state</td>
+</tr>
+<tr>
+<td><code>savePrefs(patch)</code></td>
+<td><code>POST /api/prefs</code> 保存音量、上次页面</td>
+</tr>
+<tr>
+<td><code>api(path, {method, params, body})</code></td>
+<td>统一请求 <code>/api/v1/*</code>；非 0 code 抛错；401 抛 <code>AuthError</code></td>
+</tr>
+<tr>
+<td><code>coverUrl(id)</code> / <code>streamUrl(guid)</code></td>
+<td>生成本地代理 URL</td>
+</tr>
+<tr>
+<td><code>fmtTime(ms)</code> / <code>fmtTotal(n)</code></td>
+<td>时间、数量的显示格式化</td>
+</tr>
+<tr>
+<td><code>artistNames(track)</code></td>
+<td>多歌手拼 <code>A / B</code>，空则「未知歌手」</td>
+</tr>
+<tr>
+<td><code>escapeHtml(s)</code></td>
+<td>所有模板插值必须先过它，防 XSS</td>
+</tr>
+<tr>
+<td><code>coverHtml(id, cls)</code></td>
+<td>封面 HTML 片段，懒加载</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>新增接口调用只改这里和 <code>views.js</code>，不要在页面里裸写 <code>fetch</code>。</p>
+</blockquote>
+<h4 id="appjsplayerjs151"><code>app/js/player.js</code>（151 行）</h4>
+<p>一个 <code>player</code> 对象 + 一个全局 <code>&lt;audio&gt;</code>。</p>
+<table>
+<thead>
+<tr>
+<th>成员</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>queue</code> / <code>index</code></td>
+<td>当前队列与下标</td>
+</tr>
+<tr>
+<td><code>shuffle</code> / <code>repeat</code></td>
+<td><code>off</code> / <code>all</code> / <code>one</code></td>
+</tr>
+<tr>
+<td><code>playTrack(track, queue?)</code></td>
+<td>可换队列；自动记 <code>state</code>、更新 MediaSession</td>
+</tr>
+<tr>
+<td><code>setQueue(list, startIndex)</code></td>
+<td>批量设置</td>
+</tr>
+<tr>
+<td><code>toggle()</code> / <code>next(auto)</code> / <code>prev()</code></td>
+<td>播放控制；<code>next(auto)</code> 用于 <code>ended</code> 事件</td>
+</tr>
+<tr>
+<td><code>seekRatio(r)</code></td>
+<td>0–1 跳转</td>
+</tr>
+<tr>
+<td><code>setVolume(v)</code></td>
+<td>0–1，持久化到 prefs</td>
+</tr>
+<tr>
+<td><code>on(evt, fn)</code> / <code>emit</code></td>
+<td>极简事件总线：<code>track</code>、<code>state</code>、<code>time</code>、<code>volume</code></td>
+</tr>
+<tr>
+<td><code>updateMediaSession()</code></td>
+<td>系统媒体键 / 锁屏信息</td>
+</tr>
+</tbody>
+</table>
+<p>随机逻辑：<code>next</code> 在 shuffle 时随机取一个不等于当前的下标，队列长度 1 时退化为重播。循环 <code>one</code> 时 <code>ended</code> 直接 <code>currentTime=0; play()</code>。</p>
+<h4 id="appjsviewsjs362"><code>app/js/views.js</code>（362 行）</h4>
+<p>纯函数式页面渲染，返回 HTML 字符串；数据请求都在这里发起。</p>
+<table>
+<thead>
+<tr>
+<th>函数</th>
+<th>页面</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>renderHome</code></td>
+<td>问候语 + 最近添加（12）+ 最近专辑（12）</td>
+</tr>
+<tr>
+<td><code>renderTracks(sort)</code></td>
+<td>全部歌曲，带排序 chips、分页「加载更多」</td>
+</tr>
+<tr>
+<td><code>renderAlbums(sort)</code></td>
+<td>专辑网格，排序：最近添加 / 名称 / 发行年份</td>
+</tr>
+<tr>
+<td><code>renderAlbum(guid)</code></td>
+<td>专辑详情 + 曲目 + 播放专辑</td>
+</tr>
+<tr>
+<td><code>renderArtists(sort)</code></td>
+<td>歌手网格</td>
+</tr>
+<tr>
+<td><code>renderArtist(guid)</code></td>
+<td>歌手详情 + 热门曲目 + 专辑</td>
+</tr>
+<tr>
+<td><code>renderPlaylists</code> / <code>renderPlaylist</code></td>
+<td>歌单列表 / 详情</td>
+</tr>
+<tr>
+<td><code>renderFavorites</code></td>
+<td>我的收藏（44 首实测）</td>
+</tr>
+<tr>
+<td><code>renderFolders(path)</code></td>
+<td>共享库目录浏览，面包屑</td>
+</tr>
+<tr>
+<td><code>renderSearch(q)</code></td>
+<td>搜索歌曲 + 专辑 + 歌手</td>
+</tr>
+<tr>
+<td><code>trackRows(list, opts)</code></td>
+<td>歌曲行 HTML（封面/标题/专辑/时长/收藏）</td>
+</tr>
+<tr>
+<td><code>albumCards</code> / <code>artistCards</code></td>
+<td>卡片 HTML</td>
+</tr>
+<tr>
+<td><code>chip</code> / <code>loadMore</code> / <code>trackListShell</code></td>
+<td>小组件</td>
+</tr>
+</tbody>
+</table>
+<p>约定：</p>
+<ul>
+<li>每页设置 <code>ctx.route</code>、<code>ctx.tracks</code>、<code>ctx.more</code>；<code>ctx.more</code> 返回 <code>{html, done}</code>，由 <code>app.js</code> 的「加载更多」按钮调用并追加。</li>
+<li>分页常量 <code>PAGE = 50</code>，请求带 <code>size</code>；<code>page</code> 从 1 开始。</li>
+<li>所有用户数据插值都要 <code>escapeHtml</code>。</li>
+</ul>
+<h4 id="appjsappjs569"><code>app/js/app.js</code>（569 行）</h4>
+<p>应用壳：路由、事件、播放条、歌词、收藏、登录。</p>
+<table>
+<thead>
+<tr>
+<th>区块</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>toast</code></td>
+<td>右下角轻提示</td>
+</tr>
+<tr>
+<td><code>openServerModal</code> / <code>closeServerModal</code></td>
+<td>登录弹窗</td>
+</tr>
+<tr>
+<td><code>refreshState</code> / <code>renderSidebar</code></td>
+<td>状态同步、侧栏用户区</td>
+</tr>
+<tr>
+<td><code>doConnect</code></td>
+<td>保存地址 → 取 <code>/api/auth/url</code> → <code>window.open</code> → 轮询 <code>/api/state</code></td>
+</tr>
+<tr>
+<td><code>doManualToken</code></td>
+<td>粘贴 token 登录</td>
+</tr>
+<tr>
+<td><code>route</code></td>
+<td>hash 路由：<code>#/home</code>、<code>#/tracks</code>、<code>#/album/:guid</code>、<code>#/search?q=</code> …，带请求序号防竞态</td>
+</tr>
+<tr>
+<td><code>updatePlayingRows</code></td>
+<td>给当前播放行加高亮和 ♪</td>
+</tr>
+<tr>
+<td><code>renderNowPlaying</code> / <code>updatePlayButton</code> / <code>updateProgress</code> / <code>updateVolume</code></td>
+<td>播放条 UI</td>
+</tr>
+<tr>
+<td><code>renderQueue</code></td>
+<td>队列抽屉</td>
+</tr>
+<tr>
+<td><code>loadLyrics</code> / <code>parseLrc</code> / <code>updateLyricHighlight</code></td>
+<td>歌词加载、解析、滚动高亮、点击跳转</td>
+</tr>
+<tr>
+<td><code>bind</code></td>
+<td>所有事件绑定（导航、行点击、收藏、进度、快捷键…）</td>
+</tr>
+<tr>
+<td><code>toggleFavorite</code></td>
+<td>收藏/取消，同步按钮状态</td>
+</tr>
+<tr>
+<td><code>boot</code></td>
+<td>错误监听 → 加载状态 → 设音量 → 路由</td>
+</tr>
+</tbody>
+</table>
+<p>快捷键：空格播放/暂停，<code>Ctrl+←/→</code> 上一首/下一首，<code>F12</code> 开发者工具（Electron）。</p>
+<h3 id="33-server">3.3 <code>server/</code> 本地服务</h3>
+<h4 id="serverindexmjs272"><code>server/index.mjs</code>（272 行）</h4>
+<p>HTTP 服务入口，零依赖（只用 node 内置模块）。</p>
+<p><strong>路由表</strong></p>
+<table>
+<thead>
+<tr>
+<th>路径</th>
+<th>方法</th>
+<th>作用</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>/api/state</code></td>
+<td>GET</td>
+<td>当前登录态、host、音量、上次页面</td>
+</tr>
+<tr>
+<td><code>/api/host</code></td>
+<td>POST</td>
+<td>校验并保存 NAS 地址；调 <code>/sys/config</code> 验证连通性、取 clientId</td>
+</tr>
+<tr>
+<td><code>/api/auth/url</code></td>
+<td>GET</td>
+<td>生成 OAuth 登录 URL（<code>/signin?client_id&amp;redirect_uri&amp;app_name</code>）</td>
+</tr>
+<tr>
+<td><code>/api/auth/callback</code></td>
+<td>POST/GET</td>
+<td>用 <code>code</code> 换 <code>userToken</code>（<code>/user/auth-login</code>）</td>
+</tr>
+<tr>
+<td><code>/api/auth/manual</code></td>
+<td>POST</td>
+<td>手动 token 登录（<code>/user/me</code> 验证）</td>
+</tr>
+<tr>
+<td><code>/api/logout</code></td>
+<td>POST</td>
+<td>调上游 <code>/user/logout</code> 并清本地 token</td>
+</tr>
+<tr>
+<td><code>/api/prefs</code></td>
+<td>POST</td>
+<td>保存音量 / lastView / host</td>
+</tr>
+<tr>
+<td><code>/api/v1/*</code></td>
+<td>任意</td>
+<td>透传到 NAS 同名接口，自动加 <code>authx</code>、Cookie</td>
+</tr>
+<tr>
+<td><code>/media/stream</code></td>
+<td>GET/HEAD</td>
+<td>音频流，透传 Range / 206</td>
+</tr>
+<tr>
+<td><code>/media/cover</code></td>
+<td>GET</td>
+<td>封面，浏览器缓存 1 天</td>
+</tr>
+<tr>
+<td><code>/health</code></td>
+<td>GET</td>
+<td>健康检查（返回 apiKey 前 4 位，仅用于确认版本）</td>
+</tr>
+<tr>
+<td>其它</td>
+<td>GET</td>
+<td>静态文件（<code>app/</code>），路径穿越防护</td>
+</tr>
+</tbody>
+</table>
+<p><strong>实现要点</strong></p>
+<ul>
+<li><code>requireAuth()</code>：无 token 抛 401。</li>
+<li><code>handleProxy()</code>：<code>/api/v1/xxx</code> → <code>/music/api/v1/xxx</code>；上游 <code>code=99999</code> 视为登录失效，清 token 并返回 401。</li>
+<li><code>handleStream()</code>：只转发必要头（<code>content-type/length/range/etag/last-modified</code>），用 <code>Readable.fromWeb().pipe(res)</code> 流式回传，不落盘、不整段读内存。</li>
+<li><code>handleCover()</code>：同样带签名和 Cookie，命中后 <code>Cache-Control: public, max-age=86400</code>。</li>
+<li><code>serveStatic()</code>：<code>path.normalize</code> 后校验必须以 <code>APP_DIR</code> 开头，防 <code>../</code>。</li>
+<li>错误统一 <code>{code, msg, data}</code>，前端只认 <code>code === 0</code>。</li>
+</ul>
+<h4 id="servernasmjs89"><code>server/nas.mjs</code>（89 行）</h4>
+<p>与 NAS 打交道的底层。</p>
+<table>
+<thead>
+<tr>
+<th>导出</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>SECRET</code> / <code>API_KEY</code></td>
+<td>官方前端里的签名常量（见第 5 章）</td>
+</tr>
+<tr>
+<td><code>md5(s)</code></td>
+<td>十六进制 MD5</td>
+</tr>
+<tr>
+<td><code>buildAuthx(pathname, {params, bodyBytes})</code></td>
+<td>生成 <code>nonce=...&amp;timestamp=...&amp;sign=...</code></td>
+</tr>
+<tr>
+<td><code>normalizeHost(input)</code></td>
+<td>补协议、去尾斜杠；HTTP 无端口补 5000，HTTPS 保持 443</td>
+</tr>
+<tr>
+<td><code>deviceId()</code></td>
+<td>32 位 hex，登录设备标识</td>
+</tr>
+<tr>
+<td><code>apiUrl(host, path, params)</code></td>
+<td>拼 <code>/music/api/v1/...</code></td>
+</tr>
+<tr>
+<td><code>nasApi(host, token, path, opts)</code></td>
+<td>统一调用：签名、Cookie、JSON、20s 超时、99999 抛错</td>
+</tr>
+</tbody>
+</table>
+<p><strong>签名细节（最容易写错的地方）</strong></p>
+<pre><code>GET  : 参数按 key 排序 → encodeURIComponent → 空格用 %20 → 拼 k=v&amp;...
+       → 整体 decodeURIComponent → md5 → bodyhash
+POST : md5(原始 JSON 字符串) → bodyhash
+sign = md5(SECRET_path_nonce_timestamp_bodyhash_API_KEY)
+</code></pre>
+<p>注意 <code>pathname</code> 必须带 <code>/music</code> 前缀（如 <code>/music/api/v1/track/list</code>），否则签名对不上。</p>
+<h4 id="serverconfigmjs59"><code>server/config.mjs</code>（59 行）</h4>
+<p>本地配置存储，路径 <code>~/.fnmusic-player/config.json</code>（可用 <code>FNMP_HOME</code> 覆盖，测试时很有用）。</p>
+<pre><code class="language-json">{
+  &quot;host&quot;: &quot;&quot;,
+  &quot;token&quot;: &quot;&quot;,
+  &quot;user&quot;: null,
+  &quot;deviceId&quot;: &quot;32位hex&quot;,
+  &quot;volume&quot;: 0.85,
+  &quot;lastView&quot;: &quot;#/tracks&quot;,
+  &quot;clientId&quot;: &quot;从 NAS 动态获取&quot;,
+  &quot;serverName&quot;: &quot;&quot;
+}
+</code></pre>
+<ul>
+<li><code>load()</code> 带内存缓存；文件不存在/损坏就用默认值。</li>
+<li><code>save(patch)</code> 原子写（tmp + rename），目录 0700、文件 0600。</li>
+<li><code>publicState()</code> 只暴露 host/loggedIn/user/volume/lastView，<strong>绝不把 token 返回给前端</strong>。</li>
+<li><code>clearAuth()</code> 清 token 和 user。</li>
+</ul>
+<h3 id="34-electron">3.4 <code>electron/</code> 桌面壳</h3>
+<h4 id="electronmainmjs238"><code>electron/main.mjs</code>（238 行）</h4>
+<table>
+<thead>
+<tr>
+<th>函数</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>finishLogin(code)</code></td>
+<td>POST 本地 <code>/api/auth/callback</code>；成功后关登录窗、刷新主窗</td>
+</tr>
+<tr>
+<td><code>isOAuthResult(url)</code></td>
+<td>判断是否 <code>/music/oauth/result</code>（兼容 <code>/oauth/result</code>）</td>
+</tr>
+<tr>
+<td><code>openLoginWindow(url)</code></td>
+<td>540×760 登录窗，<code>persist:fnmusic-login</code> 分区保留 NAS 登录态</td>
+</tr>
+<tr>
+<td><code>createWindow()</code></td>
+<td>1320×840 主窗，最小 980×620；拦截 <code>window.open</code></td>
+</tr>
+<tr>
+<td>调试钩子</td>
+<td><code>FNMP_SHOT</code> / <code>FNMP_DUMP</code> / <code>FNMP_EVAL</code>，见第 7 章</td>
+</tr>
+</tbody>
+</table>
+<p><strong>OAuth 拦截的关键</strong>：在 <code>will-redirect</code> / <code>will-navigate</code> 里先 <code>event.preventDefault()</code>，再取 URL 上的 <code>code</code>。不拦截的话，登录窗会继续加载音乐 SPA，SPA 会先用掉这个<strong>一次性 code</strong>，我们再换 token 就必然失败。<code>did-navigate</code> 只作为兜底（无法阻止导航）。</p>
+<p><strong>其它</strong>：<code>app.setName('飞牛音乐')</code>；macOS 关窗不退出；退出前 <code>server.close()</code>；F12 / Ctrl+Shift+I 开 DevTools。</p>
+<h3 id="35-build-scripts">3.5 <code>build/</code> 与 <code>scripts/</code></h3>
+<table>
+<thead>
+<tr>
+<th>文件</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>build/icon.png</code></td>
+<td>1024×1024 应用图标（窗口图标）</td>
+</tr>
+<tr>
+<td><code>build/icon.ico</code></td>
+<td>多尺寸 ico（16–256），安装器 / exe 用</td>
+</tr>
+<tr>
+<td><code>build/installer.nsi</code></td>
+<td>NSIS 安装脚本，见第 8 章</td>
+</tr>
+<tr>
+<td><code>scripts/login-probe.mjs</code></td>
+<td>无头打开登录页，打印 URL/正文/截图，排查登录页结构</td>
+</tr>
+<tr>
+<td><code>scripts/login-probe2.mjs</code></td>
+<td>进阶版：可自动填账号密码（仅本地调试，勿提交凭据）</td>
+</tr>
+<tr>
+<td><code>scripts/patch-exe.mjs</code></td>
+<td>用 <code>resedit</code> 改 Windows exe 的图标和版本信息，纯 JS、不需要 wine</td>
+</tr>
+</tbody>
+</table>
+<h3 id="36">3.6 运行时文件（不在仓库里）</h3>
+<table>
+<thead>
+<tr>
+<th>路径</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>~/.fnmusic-player/config.json</code></td>
+<td>token、host、偏好；0600</td>
+</tr>
+<tr>
+<td><code>~/.fnmusic-player/config.json.tmp</code></td>
+<td>原子写临时文件</td>
+</tr>
+<tr>
+<td><code>%LOCALAPPDATA%\Programs\FnMusic\</code></td>
+<td>Windows 安装版安装目录</td>
+</tr>
+<tr>
+<td><code>dist/</code></td>
+<td>构建产物</td>
+</tr>
+<tr>
+<td><code>backups/*.tar.gz</code></td>
+<td>源码快照</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="4">4. 开发过程复盘</h2>
+<h3 id="41">4.1 时间线</h3>
+<table>
+<thead>
+<tr>
+<th>阶段</th>
+<th>做了什么</th>
+<th>产出</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1. 摸底</td>
+<td>看端口、nginx 反代、应用目录</td>
+<td>确认 <code>/music</code> → <code>trim_music.socket</code>，应用在 <code>@appcenter/trim.music</code></td>
+</tr>
+<tr>
+<td>2. 找接口</td>
+<td>读前端 bundle，提取路由表</td>
+<td>拿到 <code>album/track/artist/lyric/...</code> 全部端点</td>
+</tr>
+<tr>
+<td>3. 破签名</td>
+<td>定位 <code>uk()</code> 函数，还原 MD5 拼串</td>
+<td><code>buildAuthx()</code> 可用</td>
+</tr>
+<tr>
+<td>4. 拿 token</td>
+<td>OAuth 调试受 2FA 阻塞 → 直接读 SQLite <code>user_token</code></td>
+<td>打通所有 GET 接口</td>
+</tr>
+<tr>
+<td>5. 实测</td>
+<td>写 <code>api_probe.py</code> 逐个接口试参数</td>
+<td>修正 <code>q</code> / <code>guid</code> / <code>size</code> 等关键参数</td>
+</tr>
+<tr>
+<td>6. 服务端</td>
+<td><code>nas.mjs</code> + <code>index.mjs</code>，代理、流、登录</td>
+<td><code>/health</code>、<code>/api/v1/*</code>、<code>/media/stream</code> 可用</td>
+</tr>
+<tr>
+<td>7. 前端</td>
+<td>原生 ESM 写路由、视图、播放器</td>
+<td>11 个路由跑通</td>
+</tr>
+<tr>
+<td>8. 桌面壳</td>
+<td>Electron + OAuth 拦截窗</td>
+<td>登录闭环</td>
+</tr>
+<tr>
+<td>9. 验证</td>
+<td>xvfb + <code>executeJavaScript</code> 做 DOM 断言</td>
+<td>播放、歌词、收藏、分页全绿</td>
+</tr>
+<tr>
+<td>10. 打包</td>
+<td>zip → NSIS 安装包</td>
+<td>两个 Windows 产物</td>
+</tr>
+</tbody>
+</table>
+<h3 id="42">4.2 五个关键突破</h3>
+<ol>
+<li><strong>签名算法</strong>：不是简单 <code>md5(query)</code>，而是「排序 → 编码 → 拼串 → <strong>解码</strong> → md5」。少一步 <code>decodeURIComponent</code> 就永远 401。</li>
+<li><strong>token 来源</strong>：与其硬啃 OAuth，不如先读数据库拿一条现成 token 把接口跑通；OAuth 留到最后做。这个顺序省了大量时间。</li>
+<li><strong>本地代理</strong>：一次性解决 CORS、Cookie、签名、Range 四个问题，还顺带把 token 藏在主进程侧。</li>
+<li><strong>抢 code</strong>：OAuth code 是一次性的，必须在 SPA 加载前 <code>preventDefault()</code>，否则必失败。</li>
+<li><strong>交叉打包</strong>：Linux 上不装 wine，用 <code>makensis</code> 编安装包、用纯 JS 的 <code>resedit</code> 改 PE 资源。</li>
+</ol>
+<h3 id="43">4.3 踩坑清单（省得再踩）</h3>
+<table>
+<thead>
+<tr>
+<th>坑</th>
+<th>结论</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>分页传 <code>pageSize</code> / <code>limit</code> / <code>offset</code></td>
+<td>全部无效，正确参数是 <code>size</code>，默认 50</td>
+</tr>
+<tr>
+<td><code>/album/detail</code> 传 <code>albumGUID</code></td>
+<td>报 100002，正确是 <code>guid</code></td>
+</tr>
+<tr>
+<td><code>/search/track</code> 传 <code>keyword</code></td>
+<td>报 100002，正确是 <code>q</code></td>
+</tr>
+<tr>
+<td><code>/track/stream</code> 传 <code>trackGUID</code></td>
+<td>返回 200 但内容是 JSON 错误，正确是 <code>guid</code></td>
+</tr>
+<tr>
+<td><code>/track/lyrics</code></td>
+<td>落到 SPA HTML，正确是 <code>/lyric/list?trackGUID=</code></td>
+</tr>
+<tr>
+<td>专辑排序 <code>title,asc</code></td>
+<td>被静默回退到默认排序，正确字段是 <code>name</code> / <code>releaseYear</code></td>
+</tr>
+<tr>
+<td>歌曲排序 <code>updatedAt,desc</code></td>
+<td>同上，可用字段：<code>createdAt</code> / <code>title</code> / <code>trackNumber</code></td>
+</tr>
+<tr>
+<td>登录窗 <code>window.open</code> 返回 <code>null</code></td>
+<td>主进程 <code>setWindowOpenHandler</code> 返回 <code>deny</code> 时必然为 null，不能据此判断失败</td>
+</tr>
+<tr>
+<td>OAuth code 换 token 失败</td>
+<td>多半是 SPA 抢先消费了 code，必须 preventDefault</td>
+</tr>
+<tr>
+<td>无头 Electron 报 GPU 错</td>
+<td>用 <code>xvfb-run</code>，错误可忽略；截图/DOM 正常</td>
+</tr>
+<tr>
+<td>ZIP 内中文文件名</td>
+<td>Info-ZIP 会写成 <code>#U98de#U...</code>，Windows 解压乱码 → exe 名用 ASCII</td>
+</tr>
+<tr>
+<td><code>makensis</code> 输出中文名/反斜杠</td>
+<td>Linux 下不认，<code>OutFile</code> 用正斜杠 + ASCII，编完再改名</td>
+</tr>
+<tr>
+<td>CSP 下内联 <code>onerror</code> 失效</td>
+<td>改成全局捕获 <code>document.addEventListener('error', …, true)</code></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="5">5. 接口逆向笔记</h2>
+<blockquote>
+<p>完整端点表见 <code>docs/API.md</code>。这里只讲原理和最容易出错的点。</p>
+</blockquote>
+<h3 id="51">5.1 定位</h3>
+<ul>
+<li>入口：<code>http://&lt;nas&gt;:5000/music/</code>（80 端口会 302 到 5000）</li>
+<li>反代：<code>/usr/trim/nginx/conf/conf.d/</code> 里 <code>/music</code> → <code>unix:/var/run/trim_music.socket</code></li>
+<li>应用：<code>/usr/local/apps/@appcenter/trim.music/</code>（Go 二进制 + <code>static/assets/*.js</code>）</li>
+<li>数据库：<code>/usr/local/apps/@appdata/trim.music/db/music.db</code></li>
+</ul>
+<h3 id="52-authx">5.2 签名 <code>authx</code></h3>
+<pre><code>nonce     6 位随机数字
+timestamp 毫秒
+bodyhash  GET  : md5( decodeURIComponent( 排序后的 &quot;k=v&amp;...&quot; ) )
+          POST : md5( raw JSON body )
+sign      md5( SECRET + &quot;_&quot; + pathname + &quot;_&quot; + nonce + &quot;_&quot; + timestamp + &quot;_&quot; + bodyhash + &quot;_&quot; + API_KEY )
+authx     nonce=...&amp;timestamp=...&amp;sign=...
+</code></pre>
+<p><code>pathname</code> 必须包含 <code>/music</code> 前缀（<code>/music/api/v1/track/list</code>）。</p>
+<h3 id="53-oauth">5.3 OAuth 登录</h3>
+<pre><code>GET  /music/api/v1/sys/config          → nasOAuth.clientId
+打开 /signin?client_id=&lt;id&gt;&amp;redirect_uri=&lt;urlencode(http://&lt;nas&gt;:5000/music/oauth/result)&gt;&amp;app_name=飞牛音乐
+用户登录（可能触发 OTP）
+跳回 /music/oauth/result?code=xxxxx
+POST /music/api/v1/user/auth-login     { code, deviceId }
+     → data.userToken（即 music-token）、data.user
+</code></pre>
+<ul>
+<li><code>code</code> <strong>一次性</strong>，必须抢在音乐 SPA 之前拿走。</li>
+<li>自己搭的客户端不要复用官方 clientId 做违规用途；每台 NAS 的 clientId 从 <code>sys/config</code> 动态取。</li>
+<li><code>password-login</code> 只适用于音乐应用内自建用户；NAS 同步用户会返回 <code>120001</code>。</li>
+</ul>
+<h3 id="54">5.4 常用端点</h3>
+<table>
+<thead>
+<tr>
+<th>功能</th>
+<th>端点</th>
+<th>关键参数</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>歌曲列表</td>
+<td><code>GET /track/list</code></td>
+<td><code>page</code>、<code>size</code>、<code>sort</code></td>
+</tr>
+<tr>
+<td>专辑列表/详情</td>
+<td><code>GET /album/list</code>、<code>/album/detail</code></td>
+<td><code>page</code>/<code>size</code>；详情用 <code>guid</code></td>
+</tr>
+<tr>
+<td>专辑曲目</td>
+<td><code>GET /track/album-detail/list</code></td>
+<td><code>albumGUID</code></td>
+</tr>
+<tr>
+<td>歌手</td>
+<td><code>GET /artist/list</code>、<code>/artist/detail</code></td>
+<td><code>guid</code></td>
+</tr>
+<tr>
+<td>歌单</td>
+<td><code>GET /playlist/list</code>、<code>/playlist/detail</code></td>
+<td><code>guid</code></td>
+</tr>
+<tr>
+<td>收藏</td>
+<td><code>GET /favorite-track/list</code>；<code>POST /favorite-track/create|delete</code></td>
+<td><code>{trackGUID}</code></td>
+</tr>
+<tr>
+<td>文件夹</td>
+<td><code>GET /folder-view/list</code></td>
+<td><code>parentPath</code>（必须是真实共享库路径，<code>/</code> 会 100005）</td>
+</tr>
+<tr>
+<td>搜索</td>
+<td><code>GET /search/track|album|artist</code></td>
+<td><code>q</code></td>
+</tr>
+<tr>
+<td>音频</td>
+<td><code>GET /track/stream</code></td>
+<td><code>guid</code>（支持 Range）</td>
+</tr>
+<tr>
+<td>封面</td>
+<td><code>GET /static/cover</code></td>
+<td><code>coverId</code></td>
+</tr>
+<tr>
+<td>歌词</td>
+<td><code>GET /lyric/list</code></td>
+<td><code>trackGUID</code></td>
+</tr>
+<tr>
+<td>转码</td>
+<td><code>POST /track/transcode</code></td>
+<td><code>{guid, output:{...}, start}</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="55">5.5 分页、排序、错误码</h3>
+<ul>
+<li>分页：<code>page</code> 从 1 开始，<code>size</code> 默认 50；返回 <code>{list, total, sort}</code>。</li>
+<li>排序白名单（前端校验）：<code>albumCount</code>、<code>artistName</code>、<code>createdAt</code>、<code>name</code>、<code>newTrackAddedAt</code>、<code>releaseYear</code>、<code>title</code>、<code>trackCount</code>、<code>trackNumber</code>。</li>
+<li>传了白名单外的字段不会报错，而是<strong>静默回退默认排序</strong>——调排序没生效先怀疑字段名。</li>
+<li>常见错误码见附录 A。</li>
+</ul>
+<hr />
+<h2 id="6">6. 关键实现细节</h2>
+<h3 id="61">6.1 代理层为什么这么写</h3>
+<p><code>handleProxy</code> 不做任何业务判断，只做四件事：拼路径、签名、带 Cookie、透传响应。这样上游新增接口时，前端改个路径就能用，服务端不用动。</p>
+<p>副作用：<code>/api/v1/*</code> 等于把整个音乐 API 暴露给了渲染进程。因为渲染进程加载的是本地可信代码、且窗口禁用了 <code>nodeIntegration</code>，这个暴露面是可接受的；但如果将来要嵌第三方页面，必须加能力白名单。</p>
+<h3 id="62-range">6.2 Range 透传</h3>
+<p>音频拖动进度依赖 <code>Range</code>：</p>
+<ul>
+<li>请求带 <code>Range: bytes=...</code> 时原样转发；</li>
+<li>响应保留 <code>206</code>、<code>Content-Range</code>、<code>Content-Length</code>、<code>ETag</code>、<code>Last-Modified</code>；</li>
+<li>用流式 pipe，避免整首歌进内存。</li>
+</ul>
+<p>缺 <code>Accept-Ranges</code> 或把 206 改成 200，都会导致进度条不能拖或重复下载。</p>
+<h3 id="63-code">6.3 登录窗与 code 拦截</h3>
+<pre><code>渲染进程 window.open(authUrl)
+  → 主进程 setWindowOpenHandler 拦截（deny）
+  → openLoginWindow(authUrl)
+  → 用户登录
+  → will-redirect / will-navigate 命中 /music/oauth/result
+  → preventDefault() + 取 code
+  → POST 本地 /api/auth/callback
+  → 服务端换 token、写配置
+  → 主窗 location.reload()
+</code></pre>
+<p>渲染进程这边因为 <code>window.open</code> 返回 <code>null</code>，不能靠 <code>w.closed</code> 判断，只能轮询 <code>/api/state</code>。</p>
+<h3 id="64">6.4 播放器状态</h3>
+<ul>
+<li>单一 <code>&lt;audio&gt;</code> 元素，事件驱动 UI；</li>
+<li><code>timeupdate</code> 更新进度与歌词高亮（按时间二分/线性找当前行）；</li>
+<li><code>ended</code> → <code>next(true)</code>，受 <code>repeat</code> 影响；</li>
+<li>MediaSession 的 <code>metadata</code> 用封面代理 URL，系统媒体面板能显示封面；</li>
+<li>音量持久化走 <code>savePrefs</code>，下次启动恢复。</li>
+</ul>
+<h3 id="65">6.5 歌词</h3>
+<p><code>/lyric/list</code> 返回 <code>data.list[].content</code>，可能是多段 LRC。解析：</p>
+<pre><code>[mm:ss.xx]文本  → { time: 秒, text }
+</code></pre>
+<p>支持一行多时间标签；无时间标签的行忽略。点击歌词行 <code>seek</code> 到对应秒数。</p>
+<h3 id="66">6.6 安全策略</h3>
+<table>
+<thead>
+<tr>
+<th>项</th>
+<th>做法</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>监听地址</td>
+<td>只绑 <code>127.0.0.1</code>，不对外</td>
+</tr>
+<tr>
+<td>token</td>
+<td>只在主进程/服务端；<code>publicState()</code> 不返回</td>
+</tr>
+<tr>
+<td>文件权限</td>
+<td>配置目录 0700、文件 0600</td>
+</tr>
+<tr>
+<td>XSS</td>
+<td>所有插值 <code>escapeHtml</code>；CSP 禁外链脚本</td>
+</tr>
+<tr>
+<td>路径穿越</td>
+<td>静态服务校验 <code>file.startsWith(APP_DIR)</code></td>
+</tr>
+<tr>
+<td>上游错误</td>
+<td>统一包装，不把内部堆栈返回前端</td>
+</tr>
+<tr>
+<td>遥测</td>
+<td>无，任何第三方请求都没有</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="7">7. 调试与测试</h2>
+<h3 id="71">7.1 无头运行</h3>
+<p>没有桌面环境时：</p>
+<pre><code class="language-bash">xvfb-run -a -s &quot;-screen 0 1400x900x24&quot; ./node_modules/electron/dist/electron . --no-sandbox
+</code></pre>
+<h3 id="72">7.2 调试环境变量</h3>
+<table>
+<thead>
+<tr>
+<th>变量</th>
+<th>作用</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>PORT</code></td>
+<td>纯 Web 模式端口（默认 7311）</td>
+</tr>
+<tr>
+<td><code>FNMP_HOME</code></td>
+<td>覆盖配置目录（测试隔离用）</td>
+</tr>
+<tr>
+<td><code>FNMP_SHOT=/tmp/x.png</code></td>
+<td>启动后截图并退出</td>
+</tr>
+<tr>
+<td><code>FNMP_SHOT_DELAY=3000</code></td>
+<td>截图/求值延迟 ms</td>
+</tr>
+<tr>
+<td><code>FNMP_DUMP=1</code></td>
+<td>打印 DOM 结构、布局矩形、溢出元素、图片加载情况</td>
+</tr>
+<tr>
+<td><code>FNMP_EVAL='js'</code></td>
+<td>启动后执行 JS（可做点击、跳转、断言）</td>
+</tr>
+<tr>
+<td><code>FNMP_EVAL_AFTER='expr'</code></td>
+<td>等待后求值并打印结果</td>
+</tr>
+<tr>
+<td><code>FNMP_EVAL_WAIT=2000</code></td>
+<td>求值前等待 ms</td>
+</tr>
+<tr>
+<td><code>FNMP_TEST_OAUTH=&lt;url&gt;</code></td>
+<td>直接打开指定 OAuth 回调 URL（测拦截）</td>
+</tr>
+<tr>
+<td><code>FNMP_AUTOLOGIN=1</code></td>
+<td>登录页自动填账号密码（仅本地调试，需 <code>NAS_USER</code>/<code>NAS_PASS</code>）</td>
+</tr>
+</tbody>
+</table>
+<h3 id="73">7.3 实测样例</h3>
+<pre><code class="language-bash"># 首页渲染 + 图片全部加载
+FNMP_EVAL='(async()=&gt;{location.hash=&quot;#/home&quot;;await new Promise(r=&gt;setTimeout(r,2000));window.__x={rows:document.querySelectorAll(&quot;.track-row&quot;).length,ok:[...document.images].filter(i=&gt;i.complete&amp;&amp;i.naturalWidth&gt;0).length};return 1})()' \
+FNMP_EVAL_AFTER='window.__x' \
+xvfb-run -a ./node_modules/electron/dist/electron . --no-sandbox
+</code></pre>
+<p>已验证项：登录态复用、11 个路由、播放进度、音量、收藏切换、歌词 32 行高亮、队列 50 首、分页 50→60、封面 20/20 加载。</p>
+<hr />
+<h2 id="8">8. 打包与发布</h2>
+<h3 id="81-zip">8.1 免安装 zip</h3>
+<ol>
+<li>下载 <code>electron-v33.x-win32-x64.zip</code> 并解压；</li>
+<li>在 <code>resources/app/</code> 放：<code>app/ server/ electron/ build/ docs/ package.json</code>；</li>
+<li><code>electron.exe</code> 改名 <code>FnMusic.exe</code>（<strong>必须 ASCII</strong>，原因见 8.4）；</li>
+<li>整个目录压缩。</li>
+</ol>
+<h3 id="82-nsis-linux">8.2 NSIS 安装包（Linux 交叉编译）</h3>
+<pre><code class="language-bash">sudo apt install nsis
+cd build &amp;&amp; makensis installer.nsi
+# 输出 ../dist/fnmusic-setup-0.1.0.exe（约 80 MB，LZMA solid）
+</code></pre>
+<p>脚本要点：</p>
+<ul>
+<li><code>Unicode true</code> + <code>MUI2</code>，简体中文界面；</li>
+<li><code>RequestExecutionLevel user</code> → 装到 <code>%LOCALAPPDATA%\Programs\FnMusic</code>，不需要管理员；</li>
+<li><code>File /r "../dist/fnmusic-win32-x64/*.*"</code> 打入整个应用目录；</li>
+<li>写 <code>HKCU\...\Uninstall\FnMusic</code>，支持「设置 → 应用」卸载；</li>
+<li>桌面 + 开始菜单快捷方式，安装完可勾选启动。</li>
+</ul>
+<h3 id="83">8.3 图标与版本信息</h3>
+<pre><code class="language-bash">node scripts/patch-exe.mjs &lt;原始exe&gt; build/icon.ico &lt;输出exe&gt;
+</code></pre>
+<p><code>resedit</code> 直接改 PE 的 <code>RT_ICON</code> / <code>RT_VERSION</code>，不需要 wine。脚本会替换图标组并写入 <code>ProductName/FileVersion</code> 等字段。<strong>改完务必用 <code>file</code> 确认仍是 <code>PE32+ executable</code></strong>。</p>
+<h3 id="84">8.4 文件名编码坑（重要）</h3>
+<p>Info-ZIP 在 Linux 上压缩非 ASCII 文件名时会写成 <code>#U98de#U725b...</code>，Windows 资源管理器解压后就是乱码文件名。规避：</p>
+<ul>
+<li>压缩包内所有文件名用 ASCII（<code>FnMusic.exe</code>、<code>README.txt</code>）；</li>
+<li>中文只放在<strong>文件内容</strong>和<strong>快捷方式显示名</strong>里；</li>
+<li>压缩包本身的下载名可以用中文（HTTP 头是 UTF-8）。</li>
+</ul>
+<p>同理，<code>makensis</code> 在 Linux 下 <code>OutFile</code> 不要用中文和反斜杠：先用 <code>../dist/fnmusic-setup-0.1.0.exe</code> 编，再重命名。</p>
+<hr />
+<h2 id="9">9. 已知限制与路线图</h2>
+<p><strong>当前不做/没做完</strong></p>
+<ul>
+<li>歌单创建、改名、加歌、删歌</li>
+<li>播放历史上报（飞牛 App 看不到本客户端的播放记录）</li>
+<li>专辑/歌手详情超过 50 首的分页</li>
+<li>搜索联想（<code>/search/suggest</code>）</li>
+<li>APE/WMA/DSD 等浏览器不支持格式的转码兜底</li>
+<li>系统托盘、全局快捷键、桌面歌词</li>
+<li>代码签名、自动更新、macOS 包</li>
+</ul>
+<p><strong>优先级建议</strong>：歌单管理 → 播放历史上报 → 详情分页 → 转码兜底 → 托盘/快捷键。</p>
+<p>详见 <code>docs/NEXT.md</code>。</p>
+<hr />
+<h2 id="10">10. 如何继续开发</h2>
+<h3 id="101">10.1 加一个新页面</h3>
+<ol>
+<li><code>app/js/views.js</code> 写 <code>renderXxx()</code>，设置 <code>ctx.route/ctx.tracks/ctx.more</code>，返回 HTML；</li>
+<li><code>app/js/app.js</code> 的 <code>route()</code> 加 <code>case 'xxx'</code>，设置标题并 <code>await views.renderXxx()</code>；</li>
+<li><code>app/index.html</code> 侧栏加 <code>&lt;a data-nav="xxx" href="#/xxx"&gt;</code>；</li>
+<li>需要新样式就加在 <code>style.css</code> 对应分区。</li>
+</ol>
+<h3 id="102">10.2 加一个新接口</h3>
+<ol>
+<li>确认端点和参数（用 <code>docs/API.md</code> 的方法实测）；</li>
+<li>前端直接 <code>api('/new/path', {params})</code>，服务端 <code>/api/v1/*</code> 会自动代理，<strong>通常不用改服务端</strong>；</li>
+<li>只有需要特殊处理（二进制、非 JSON、额外头）才在 <code>server/index.mjs</code> 加独立路由。</li>
+</ol>
+<h3 id="103">10.3 加播放器能力</h3>
+<ul>
+<li>队列操作改 <code>player.js</code>，通过 <code>emit('track'|'state')</code> 通知 UI；</li>
+<li>UI 更新在 <code>app.js</code> 的 <code>renderNowPlaying/updateProgress/renderQueue</code>；</li>
+<li>需要系统集成（媒体键、任务栏）优先用 MediaSession 和 Electron 主进程 API。</li>
+</ul>
+<h3 id="104">10.4 改签名/兼容新版</h3>
+<p>如果飞牛升级后 401：</p>
+<ol>
+<li>打开新版 <code>/music/</code> 的 <code>static/assets/*.js</code>，搜 <code>authx</code> 或 <code>nonce=</code>;</li>
+<li>找生成 <code>sign</code> 的函数，确认拼串顺序、是否新增字段；</li>
+<li>同步改 <code>server/nas.mjs</code> 的 <code>buildAuthx()</code>；</li>
+<li>用 <code>/sys/config</code> 做最小验证（不需要登录）。</li>
+</ol>
+<hr />
+<h2 id="11_1">11. 贡献指南</h2>
+<ul>
+<li><strong>风格</strong>：原生 ESM，不引入框架；2 空格缩进；函数尽量纯；模板字符串拼 HTML 必须 <code>escapeHtml</code>。</li>
+<li><strong>提交</strong>：一个 PR 只做一件事；说明「改了什么、为什么、怎么验证」。</li>
+<li><strong>不要提交</strong>：<code>config.json</code>、token、内网 IP、个人路径、<code>dist/</code>、<code>backups/</code>。</li>
+<li><strong>测试</strong>：至少跑通「启动 → 登录态 → 播放一首 → 切页」；UI 改动附截图。</li>
+<li><strong>接口变更</strong>：同步更新 <code>docs/API.md</code>，并在 PR 里注明测试的 fnOS / trim.music 版本。</li>
+</ul>
+<hr />
+<h2 id="12_1">12. 合规、安全与公开前检查清单</h2>
+<p><strong>公开仓库前逐项确认</strong></p>
+<ul>
+<li>[ ] <code>server/config.mjs</code> 默认 <code>host</code> 为空</li>
+<li>[ ] 代码/文档里没有真实 NAS IP、用户名、下载目录</li>
+<li>[ ] 没有提交 <code>~/.fnmusic-player/config.json</code></li>
+<li>[ ] 没有提交 <code>dist/</code>、<code>backups/</code></li>
+<li>[ ] 文档中的 clientId 写成「动态获取」</li>
+<li>[ ] README 说明「非官方、仅供个人使用」</li>
+<li>[ ] 如权利人要求，能立即移除 <code>SECRET</code> / <code>API_KEY</code>（建议做成构建时注入）</li>
+</ul>
+<p><strong>建议的改进</strong>：把 <code>SECRET</code>/<code>API_KEY</code> 移到 <code>server/constants.example.mjs</code>，运行时从环境变量或本地未入库文件读取，仓库只留占位符。这样既方便继续开发，也避免公开传播官方常量。</p>
+<p><strong>Token 安全</strong>：token 等同账号会话，泄露即可操作你的音乐库。不要贴到 issue、截图、日志里；共享屏幕前先退出登录。</p>
+<hr />
+<h2 id="a">附录 A：错误码</h2>
+<table>
+<thead>
+<tr>
+<th>code</th>
+<th>含义</th>
+<th>处理</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>0</code></td>
+<td>成功</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>99999</code></td>
+<td>INVALID TOKEN / 未授权</td>
+<td>清 token，重新登录</td>
+</tr>
+<tr>
+<td><code>120001</code></td>
+<td>未授权（OAuth 用户走密码登录时常见）</td>
+<td>改用 OAuth</td>
+</tr>
+<tr>
+<td><code>100001</code></td>
+<td>unknown error（如 code 无效/过期）</td>
+<td>重新走登录</td>
+</tr>
+<tr>
+<td><code>100002</code></td>
+<td>invalid arguments（参数名/类型错）</td>
+<td>对照文档检查参数</td>
+</tr>
+<tr>
+<td><code>100005</code></td>
+<td>resource not found（路径/guid 不存在）</td>
+<td>检查 <code>parentPath</code>、<code>guid</code></td>
+</tr>
+<tr>
+<td>HTTP 401</td>
+<td>本地服务判定未登录</td>
+<td>前端弹登录框</td>
+</tr>
+<tr>
+<td>HTTP 502</td>
+<td>上游不可达/返回异常</td>
+<td>检查 NAS 地址、网络、服务状态</td>
+</tr>
+</tbody>
+</table>
+<h2 id="bfaq">附录 B：FAQ</h2>
+<p><strong>Q：为什么不用浏览器直接连 NAS？</strong>
+A：CORS、Cookie 域、请求签名三座山，必须有本地代理。见 2.3。</p>
+<p><strong>Q：为什么 token 要存在本地文件？</strong>
+A：Electron 没有系统钥匙串的统一实现；文件 0600 是当前最简单可靠的方案。后续可接 <code>safeStorage</code>。</p>
+<p><strong>Q：登录一直失败？</strong>
+A：先确认账号是否开了 OTP；再确认 NAS 地址端口（HTTP 5000 / HTTPS 5001）；最后看主进程日志 <code>[oauth] callback ...</code>。</p>
+<p><strong>Q：播放没声音/不能拖进度？</strong>
+A：看 <code>/media/stream</code> 是否返回 206 和 <code>Content-Range</code>；确认上游音频格式浏览器支持（mp3/flac/aac 都行，APE 不行）。</p>
+<p><strong>Q：官方升级后全挂了？</strong>
+A：按 10.4 重新对签名；接口字段变化就看新版前端 bundle 的路由表。</p>
+<p><strong>Q：能上架应用商店吗？</strong>
+A：不能。这是非官方逆向客户端，且使用了官方客户端常量；只适合自用/开源学习。</p>
+<hr />
+<p><em>本说明书随代码一起维护。改接口、改架构、加功能时，请同步更新对应章节。</em></p></main>
+</div></body></html>

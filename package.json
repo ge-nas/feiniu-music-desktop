@@ -1,0 +1,17 @@
+{
+  "name": "fnmusic-player",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "飞牛音乐桌面播放器",
+  "main": "electron/main.mjs",
+  "scripts": {
+    "start": "node server/index.mjs",
+    "electron": "electron .",
+    "dev": "electron ."
+  },
+  "devDependencies": {
+    "electron": "^33.4.11",
+    "resedit": "^3.1.0"
+  }
+}
