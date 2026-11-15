@@ -10,6 +10,8 @@ const defaults = () => ({
   host: '',
   token: '',
   user: null,
+  username: '',
+  serverName: '',
   deviceId: deviceId(),
   volume: 0.85,
   lastView: '#/tracks',
@@ -49,6 +51,8 @@ export function publicState() {
   const c = load();
   return {
     host: c.host,
+    serverName: c.serverName || '',
+    username: c.username || '',
     loggedIn: Boolean(c.token && c.user),
     user: c.user,
     volume: c.volume,

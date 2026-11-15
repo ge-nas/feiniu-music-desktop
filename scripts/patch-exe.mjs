@@ -18,8 +18,8 @@ if (!vi) vi = Resource.VersionInfo.create(lang, {}, []);
 vi.setStringValues({ lang, codepage: cp }, {
   FileDescription: '飞牛音乐',
   ProductName: '飞牛音乐',
-  ProductVersion: '0.1.0.0',
-  FileVersion: '0.1.0.0',
+  ProductVersion: '0.2.0.0',
+  FileVersion: '0.2.0.0',
   CompanyName: 'fnmusic',
   LegalCopyright: 'Personal use only',
   OriginalFilename: 'FnMusic.exe',

@@ -61,7 +61,7 @@ function requireAuth() {
 }
 
 function upstreamError(res, err) {
-  const status = err.code === 99999 || err.code === 401 ? 401 : 502;
+  const status = err.code === 99999 || err.code === 401 ? 401 : err.code === 400 ? 400 : 502;
   sendJson(res, { code: err.code || -1, msg: err.message || '请求失败', data: null }, status);
 }
 
@@ -124,6 +124,40 @@ async function handleAuth(req, res, url) {
     if (me.code !== 0) throw Object.assign(new Error(me.msg || 'token 无效'), { code: 401 });
     store.save({ token, user: me.data });
     return sendJson(res, { ok: true, user: me.data });
+  }
+
+  if (url.pathname === '/api/auth/password' && req.method === 'POST') {
+    // 账号密码直登：走官方 /user/password-login，不依赖网页授权窗口
+    const body = await readBody(req);
+    const username = String(body?.username || '').trim();
+    const password = String(body?.password || '');
+    if (!username) throw Object.assign(new Error('请填写账号'), { code: 400 });
+    if (!password) throw Object.assign(new Error('请填写密码'), { code: 400 });
+    const cfg = store.load();
+    if (!cfg.host) throw Object.assign(new Error('请先填写 NAS 地址'), { code: 400 });
+    const r = await nasApi(cfg.host, '', '/user/password-login', {
+      method: 'POST',
+      body: { username, password, deviceId: cfg.deviceId },
+    });
+    if (r.code !== 0 || !r.data?.userToken) {
+      const e = new Error(
+        r.code === 120001 ? '账号或密码不正确'
+          : r.code === 120006 ? '请填写密码'
+            : r.msg || '登录失败',
+      );
+      e.code = 401;
+      throw e;
+    }
+    const token = r.data.userToken;
+    // 自检：确认 token 真的可用（避免脏 token 存下来）
+    let me;
+    try {
+      me = await nasApi(cfg.host, token, '/user/me');
+    } catch {}
+    if (!me || me.code !== 0) throw Object.assign(new Error('登录成功但校验失败，请重试'), { code: 502 });
+    const user = me.data || r.data.user;
+    store.save({ token, user, username });
+    return sendJson(res, { ok: true, user });
   }
 
   if (url.pathname === '/api/logout' && req.method === 'POST') {

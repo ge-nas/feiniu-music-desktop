@@ -113,17 +113,28 @@
 
   <div class="modal-mask" id="serverModal">
     <div class="modal">
-      <h2>连接飞牛 NAS</h2>
-      <p class="modal-sub">填写飞牛 NAS 地址，通过飞牛账号授权登录。</p>
-      <label>服务器地址</label>
-      <input id="hostInput" placeholder="http://192.168.1.10:5000" />
+      <h2>登录飞牛音乐</h2>
+      <p class="modal-sub">填写 NAS 地址和音乐账号密码，直接登录。</p>
+      <div class="field">
+        <label for="hostInput">服务器地址</label>
+        <input id="hostInput" placeholder="192.168.1.10 或 http://192.168.1.10:5000" />
+      </div>
+      <div class="field">
+        <label for="userInput">账号</label>
+        <input id="userInput" autocomplete="username" placeholder="飞牛音乐账号" />
+      </div>
+      <div class="field">
+        <label for="passInput">密码</label>
+        <input id="passInput" type="password" autocomplete="current-password" placeholder="音乐账号密码" />
+      </div>
       <div class="modal-actions">
         <button class="btn ghost" data-close-modal>取消</button>
-        <button class="btn" id="connectBtn">连接并登录</button>
+        <button class="btn" id="loginBtn">登录</button>
       </div>
       <details class="manual">
-        <summary>已有 music-token？手动粘贴</summary>
-        <input id="tokenInput" placeholder="32 位 token" />
+        <summary>其他登录方式</summary>
+        <button class="btn ghost" id="connectBtn">用飞牛账号网页授权登录</button>
+        <input id="tokenInput" placeholder="已有 music-token？粘贴登录" />
         <button class="btn ghost" id="tokenBtn">使用 Token 登录</button>
       </details>
       <div class="modal-msg" id="modalMsg"></div>

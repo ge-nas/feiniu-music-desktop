@@ -4,7 +4,7 @@ SetCompressor /SOLID lzma
 !include "MUI2.nsh"
 
 !define APPNAME "飞牛音乐"
-!define APPVER "0.1.0"
+!define APPVER "0.2.0"
 !define APPEXE "FnMusic.exe"
 !define REGKEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\FnMusic"
 
@@ -17,7 +17,7 @@ BrandingText "${APPNAME} ${APPVER}"
 ShowInstDetails show
 ShowUninstDetails show
 
-VIProductVersion "0.1.0.0"
+VIProductVersion "0.2.0.0"
 VIAddVersionKey /LANG=2052 "ProductName" "${APPNAME}"
 VIAddVersionKey /LANG=2052 "ProductVersion" "${APPVER}"
 VIAddVersionKey /LANG=2052 "FileDescription" "${APPNAME} 安装程序"

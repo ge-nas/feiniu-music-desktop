@@ -22,7 +22,52 @@ function toast(msg) {
 function openServerModal(msg = '') {
   $('#serverModal').classList.add('open');
   $('#hostInput').value = state.host || '';
+  $('#userInput').value = state.username || state.user?.name || '';
   $('#modalMsg').textContent = msg;
+  setTimeout(() => {
+    const target = state.host ? (state.username ? $('#passInput') : $('#userInput')) : $('#hostInput');
+    target?.focus();
+  }, 60);
+}
+
+/* 账号密码直登（官方 password-login） */
+async function doLogin() {
+  const host = $('#hostInput').value.trim();
+  const username = $('#userInput').value.trim();
+  const password = $('#passInput').value;
+  const btn = $('#loginBtn');
+  $('#modalMsg').textContent = '';
+  if (!host) return ($('#modalMsg').textContent = '请填写 NAS 地址');
+  if (!username) return ($('#modalMsg').textContent = '请填写账号');
+  if (!password) return ($('#modalMsg').textContent = '请填写密码');
+  btn.disabled = true;
+  try {
+    const h = await fetch('/api/host', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ host }),
+    }).then((x) => x.json());
+    if (!h.ok) throw new Error(h.msg || '无法连接该地址');
+    state.host = h.host;
+    state.serverName = h.serverName || '';
+
+    const r = await fetch('/api/auth/password', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password }),
+    }).then((x) => x.json());
+    if (!r.ok) throw new Error(r.msg || r.error || '登录失败');
+
+    $('#passInput').value = '';
+    await refreshState();
+    closeServerModal();
+    toast(`欢迎，${state.user?.name || username}`);
+    route();
+  } catch (e) {
+    $('#modalMsg').textContent = e.message;
+  } finally {
+    btn.disabled = false;
+  }
 }
 function closeServerModal() {
   $('#serverModal').classList.remove('open');
@@ -488,6 +533,12 @@ function bind() {
   $('#userRow').addEventListener('click', (e) => {
     if (e.target.closest('#logoutBtn')) return;
     openServerModal();
+  });
+  $('#loginBtn').addEventListener('click', doLogin);
+  ['hostInput', 'userInput', 'passInput'].forEach((id) => {
+    $('#' + id).addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') doLogin();
+    });
   });
   $('#connectBtn').addEventListener('click', doConnect);
   $('#tokenBtn').addEventListener('click', doManualToken);
