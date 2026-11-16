@@ -3,6 +3,11 @@
 对接飞牛 NAS「飞牛音乐」网页版接口的第三方桌面客户端。
 Electron 外壳 + 本地零依赖 Node 服务 + 原生 ES Module 前端，无打包构建步骤。
 
+## 发布地址
+
+- GitHub 仓库：<https://github.com/ge-nas/feiniu-music-desktop>
+- 下载安装包：<https://github.com/ge-nas/feiniu-music-desktop/releases>
+
 ## 开发者文档
 
 - [开发者说明书](docs/开发者说明书.md)：架构、逐文件说明、开发过程、接口逆向、打包、如何继续开发
