@@ -53,7 +53,7 @@ hr{border:0;border-top:1px solid var(--line);margin:28px 0}
 </ul>
 </li>
 <li><a href="#3">3. 目录与文件逐一说明</a><ul>
-<li><a href="#31">3.1 根目录</a></li>
+<li><a href="#31">3.1 根目录（交付目录中的 源代码/）</a></li>
 <li><a href="#32-app">3.2 app/ 前端</a><ul>
 <li><a href="#appindexhtml138">app/index.html（138 行）</a></li>
 <li><a href="#appcssstylecss367">app/css/style.css（367 行）</a></li>
@@ -264,7 +264,7 @@ cd build &amp;&amp; makensis installer.nsi
 <p>本地服务同时解决三者：它是同源（<code>127.0.0.1</code>）的，能安全持有 token、能算签名、能加 Cookie，还能把 Range 原样透传。附带好处：token 不出本机、渲染进程拿不到 token。</p>
 <hr />
 <h2 id="3">3. 目录与文件逐一说明</h2>
-<h3 id="31">3.1 根目录</h3>
+<h3 id="31">3.1 根目录（交付目录中的 <code>源代码/</code>）</h3>
 <table>
 <thead>
 <tr>
@@ -315,9 +315,9 @@ cd build &amp;&amp; makensis installer.nsi
 <td>登录页探针、PE 资源修改</td>
 </tr>
 <tr>
-<td><code>docs/</code></td>
+<td><code>文档/</code>（仓库内为 <code>docs/</code>）</td>
 <td>文档</td>
-<td>接口笔记、路线图、本说明书</td>
+<td>接口笔记、路线图、本说明书；交付目录中与 <code>源代码/</code> 平级</td>
 </tr>
 <tr>
 <td><code>dist/</code></td>
@@ -983,7 +983,7 @@ sign = md5(SECRET_path_nonce_timestamp_bodyhash_API_KEY)
 <hr />
 <h2 id="5">5. 接口逆向笔记</h2>
 <blockquote>
-<p>完整端点表见 <code>docs/API.md</code>。这里只讲原理和最容易出错的点。</p>
+<p>完整端点表见 <code>API.md</code>。这里只讲原理和最容易出错的点。</p>
 </blockquote>
 <h3 id="51">5.1 定位</h3>
 <ul>
@@ -1281,7 +1281,7 @@ cd build &amp;&amp; makensis installer.nsi
 <li>代码签名、自动更新、macOS 包</li>
 </ul>
 <p><strong>优先级建议</strong>：歌单管理 → 播放历史上报 → 详情分页 → 转码兜底 → 托盘/快捷键。</p>
-<p>详见 <code>docs/NEXT.md</code>。</p>
+<p>详见 <code>NEXT.md</code>。</p>
 <hr />
 <h2 id="10">10. 如何继续开发</h2>
 <h3 id="101">10.1 加一个新页面</h3>
@@ -1293,7 +1293,7 @@ cd build &amp;&amp; makensis installer.nsi
 </ol>
 <h3 id="102">10.2 加一个新接口</h3>
 <ol>
-<li>确认端点和参数（用 <code>docs/API.md</code> 的方法实测）；</li>
+<li>确认端点和参数（用 <code>API.md</code> 的方法实测）；</li>
 <li>前端直接 <code>api('/new/path', {params})</code>，服务端 <code>/api/v1/*</code> 会自动代理，<strong>通常不用改服务端</strong>；</li>
 <li>只有需要特殊处理（二进制、非 JSON、额外头）才在 <code>server/index.mjs</code> 加独立路由。</li>
 </ol>
@@ -1318,7 +1318,7 @@ cd build &amp;&amp; makensis installer.nsi
 <li><strong>提交</strong>：一个 PR 只做一件事；说明「改了什么、为什么、怎么验证」。</li>
 <li><strong>不要提交</strong>：<code>config.json</code>、token、内网 IP、个人路径、<code>dist/</code>、<code>backups/</code>。</li>
 <li><strong>测试</strong>：至少跑通「启动 → 登录态 → 播放一首 → 切页」；UI 改动附截图。</li>
-<li><strong>接口变更</strong>：同步更新 <code>docs/API.md</code>，并在 PR 里注明测试的 fnOS / trim.music 版本。</li>
+<li><strong>接口变更</strong>：同步更新 <code>API.md</code>，并在 PR 里注明测试的 fnOS / trim.music 版本。</li>
 </ul>
 <hr />
 <h2 id="12_1">12. 合规、安全与公开前检查清单</h2>
